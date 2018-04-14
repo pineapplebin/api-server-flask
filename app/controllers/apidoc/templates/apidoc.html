@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <!-- Latest compiled and minified CSS -->
+  <link href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css"
+        rel="stylesheet">
+  <script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+
+    html, body {
+      font-size: 18px;
+      background: #EEE;
+      width: 100%;
+    }
+
+    .module-block {
+      background: white;
+      border-radius: 10px;
+    }
+
+    .module-title {
+      background: #666;
+      color: white;
+      height: 50px;
+      line-height: 50px;
+      padding: 0 5px;
+      border-radius: 10px;
+    }
+
+    .view {
+      border: 2px solid white;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .view span {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .view-title {
+      line-height: 30px;
+      padding: 10px;
+    }
+
+    .view-divider {
+      padding: 5px 10px;
+      margin: 5px -10px;
+      font-style: italic;
+      font-size: 16px;
+      background: white;
+      box-shadow: 0 3px 3px 0 #DDD;
+    }
+
+    .view .method {
+      color: white;
+      padding: 0 10px;
+      font-weight: bold;
+      border-radius: 10px;
+      height: 30px;
+    }
+
+    .view.GET {
+      border-color: #49CC90;
+      background-color: rgba(73, 204, 144, .1);
+    }
+
+    .view.GET .method {
+      background-color: #49CC90;
+    }
+
+    .view.POST {
+      border-color: #61AFFE;
+      background-color: rgba(97, 175, 254, .1);
+    }
+
+    .view.POST .method {
+      background-color: #61AFFE;
+    }
+
+    .view .route {
+      font-weight: bold;
+    }
+
+    .view-body {
+      padding: 10px;
+    }
+
+    .view-body.hide {
+      display: none;
+    }
+
+    .view-body pre {
+      font-size: 16px;
+    }
+
+    .view-body .table {
+      font-size: 14px;
+    }
+
+    .trigger-btn {
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .hlcode {
+      background: transparent;
+      max-height: 100px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="page-header doc-header">
+    <h1>APIDOC</h1>
+    <p>更新时间：{{ extra['updated_at'] }}</p>
+  </div>
+  <!--<div>-->
+  <!--<h3>说明</h3>-->
+  <!--<pre>-->
+  <!--当使用带有ROLE_DEVELOP权限以上的用户token时，请求GET方法的所有接口都可以加上<span style="color: deeppink">__as_user</span>的查询字符串参数，充当该id的用户-->
+  <!--例子：<i>/user/profile?__as_user=10001</i></pre>-->
+  <!--</div>-->
+  <div class="doc-body">
+    {% for module_name, module in doc|dictsort if module.items()|length %}
+    <div class="module-block">
+      <h3 class="module-title">
+        {{ module_name }}
+        <span class="trigger-btn view-open" style="float: right;"
+              data-for="module_{{ module_name }}">
+          展开/折叠
+        </span>
+      </h3>
+      <div class="module-content hide" id="module_{{ module_name }}"
+           data-showing="0">
+        {% for view_name, view in module|dictsort %}
+        <div class="view {{ view['method'] }}">
+          <div class="view-title">
+            <span class="method">{{ view['method'] }}</span>
+            <span class="route">{{ view['route'] }}</span>
+            {% if view['doc']|length %}
+            <span class="title">{{ view['doc'][0] }}</span>
+            {% endif %}
+            <div style="display: inline-block; float: right; font-size: 14px;">
+              {% if 'authorization'in view and view['authorization'] > 2 %}
+              <span style="color: darkred;">
+                权限[{{ view['authorization'] }}]
+              </span>
+              {% endif %}
+              <span class="trigger-btn view-open"
+                    data-for="view_{{ module_name }}_{{ view_name }}">
+                展开/折叠
+              </span>
+            </div>
+            <div style="clear: both;"></div>
+          </div>
+          <div class="view-body hide" data-showing="0"
+               id="view_{{ module_name }}_{{ view_name }}">
+            <pre>{{ '<br>'.join(view['doc'])|safe }}</pre>
+            {% if view['args'].items()|length %}
+            <div class="view-divider">参数</div>
+            <div>
+              {% for location in ['query', 'form'] if location in
+              view['args'] %}
+              <p>{{ location }}</p>
+              <table class="table">
+                <tbody>
+                <tr>
+                  <td>参数名</td>
+                  <td>格式</td>
+                  <td>是否必填</td>
+                  <td>默认值</td>
+                </tr>
+                {% for field_name, field in view['args'][location]|dictsort %}
+                <tr>
+                  <td><b>{{ field_name }}</b></td>
+                  <td>{{ field['type'] }}</td>
+                  <td>{{ field['required'] }}</td>
+                  <td></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% if view['errors'].items()|length %}
+            <div class="view-divider">错误码</div>
+            <div>
+              <table class="table">
+                <tbody>
+                <tr>
+                  <td>错误码</td>
+                  <td>说明</td>
+                </tr>
+                {% for error, desc in view['errors']|dictsort %}
+                <tr>
+                  <td><b>{{ error }}</b></td>
+                  <td>{{ desc }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
+            <div class="view-divider">成功返回</div>
+            <div>
+              <pre>{{ view['response'] }}</pre>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<script>
+  window.onload = function () {
+    $('.view-open').click(function (e) {
+      var node = $(e.target);
+      var target = $('#' + node.attr('data-for'));
+      if (target.data('showing') === '0') {
+        target.addClass('hide');
+        target.data('showing', '1');
+      } else {
+        target.removeClass('hide');
+        target.data('showing', '0');
+      }
+    });
+
+    $('.hlcode').each(function (i, block) {
+      var n = JSON.parse(block.innerHTML.replace(/'/g, '"'))
+      $(block).text(JSON.stringify(n, null, 2));
+      hljs.highlightBlock(block);
+    });
+
+    $('button.socket-hideshow-btn').click(function (e) {
+      var node = $(e.target);
+      var target = $('#' + node.attr('data-for'));
+      if (target.data('showing') === '0') {
+        target.show();
+        target.data('showing', '1');
+      } else {
+        target.hide();
+        target.data('showing', '0');
+      }
+    });
+  }
+</script>
+</body>
+</html>
